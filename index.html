@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Sydle</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+        integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+        crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+        integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+        crossorigin=""></script>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div id="infobox">
+            <h1 id="suburb-name"></h1>
+            <ul id="answer-list">
+        </div>
+        </ul>
+        <div id="map"></div>
+        <script src="./js/leaflet-providers.js"></script>
+        <!-- <script src="./js/suburbCoords.js"></script> -->
+        <script type="text/javascript" src="./data0.json"></script>
+        <!-- Functions -->
+        <script>
+            function degreesToRadians(degrees) {
+                return degrees * Math.PI / 180;
+            }
+            function radiansToDegrees(radians) {
+                return radians * 180 / Math.PI;
+            }
+            function distanceInKmBetweenEarthCoordinates(lat1, lon1, lat2, lon2) {
+                var earthRadiusKm = 6371;
+
+                var dLat = degreesToRadians(lat2-lat1);
+                var dLon = degreesToRadians(lon2-lon1);
+
+                lat1 = degreesToRadians(lat1);
+                lat2 = degreesToRadians(lat2);
+
+                var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2); 
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                return earthRadiusKm * c;
+            }
+            function generateBearing(startLat, startLng, destLat, destLng){
+                startLat = degreesToRadians(startLat);
+                startLng = degreesToRadians(startLng);
+                destLat = degreesToRadians(destLat);
+                destLng = degreesToRadians(destLng);
+
+                y = Math.sin(destLng - startLng) * Math.cos(destLat);
+                x = Math.cos(startLat) * Math.sin(destLat) -
+                        Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng);
+                brng = Math.atan2(y, x);
+                brng = radiansToDegrees(brng);
+                return (brng + 360) % 360;
+            }
+            function getCardinal(angle) {
+                // TODO Average out starting bearing with midpoint bearing to get more accurate direction
+                if (angle > 337.5 || angle < 22.5) {
+                    // North
+                    return "\u2B06\uFE0F";
+                } else if (angle <= 67.5 && angle >= 22.5) {
+                    // North East
+                    return "\u2197\uFE0F";
+                } else if (angle > 67.5 && angle < 112.5) {
+                    // East
+                    return "\u27A1\uFE0F";
+                } else if (angle >= 112.5 && angle <= 157.5) {
+                    // South East
+                    return "\u2198\uFE0F";
+                } else if (angle > 157.5 && angle < 202.5) {
+                    // South
+                    return "\u2B07\uFE0F";
+                } else if (angle >= 202.5 && angle <= 247.5) {
+                    // South West
+                    return "\u2199\uFE0F";
+                } else if (angle > 247.5 && angle < 292.5) {
+                    // West
+                    return "\u2B05\uFE0F";
+                } else if (angle >= 292.5 && angle <= 337.5) {
+                    // North West
+                    return "\u2196\uFE0F";
+                }
+            }
+            function returnGuessString(value, correctAnswer) {
+                return correctAnswer ? 
+                '<li><span style="color: limegreen;"> ' +value.name+' </span><span> '+value.distance+" km </span><span> "+value.bearing+"° </span><span> "+value.cardinalDirection+' </span></li>' 
+                :
+                '<li><span>' +value.name+' </span><span>'+value.distance+" km </span><span>"+value.bearing+"° </span><span>"+value.cardinalDirection+' </span></li>';
+            }
+            function addGuess(guess, answer, isCorrect) {
+                console.log(guess, answer);
+                const guessLat = guess.coords.lat;
+                const guessLng = guess.coords.lng;
+                const answerLat = answer.coords.lat;
+                const answerLng = answer.coords.lng;
+                const bearing = Math.round(generateBearing(guessLat, guessLng, answerLat, answerLng));
+                const distance = Math.round(distanceInKmBetweenEarthCoordinates(guessLat, guessLng, answerLat, answerLng));
+                const cardinalDirection = getCardinal(Math.round(bearing));
+                const guessObject = {
+                    name: guess.name.toUpperCase(),
+                    distance,
+                    bearing,
+                    cardinalDirection
+                };
+                console.log(guessObject);
+                document.getElementById('answer-list').innerHTML += returnGuessString(guessObject, isCorrect);
+                // guessList.push(guessObject);
+                // localStorage.setItem('guessList', JSON.stringify(guessList));
+            }
+        </script>
+        <!-- Startup -->
+        <script>
+            const startDate = new Date('2022-05-06').setHours(0,0,0,0);
+            const dayInMillis = 86400000;
+            const currentDate = new Date();
+            const todaysIndex = Math.floor((currentDate-startDate)/dayInMillis);
+
+            if (todaysIndex != localStorage.getItem('todaysIndex')) {
+                localStorage.clear();
+            }
+            localStorage.setItem('todaysIndex', todaysIndex);
+            // Creating map options
+            // const bounds = [[-33.5000, 150.782379], [-34.037872, 152.189532]];
+            // const center = [-33.8578, 151.0066];
+
+            const bounds = new L.LatLngBounds(new L.LatLng(-33.3500, 150.482379), new L.LatLng(-34.337872, 151.589532));
+            var mapOptions = {
+                center: bounds.getCenter(),
+                zoom: 11,
+                minNativeZoom: 11,
+                minZoom: 11,
+                zoomControl: false,
+                maxBounds: bounds,
+                maxBoundsViscosity: 1.0,
+                renderer: new L.Canvas()
+            }
+            // Creating a map object
+            var map = new L.map('map', mapOptions);
+            L.tileLayer.provider('Esri.WorldImagery').addTo(map);
+            // Adding layer to the map
+            // map.addLayer(CartoDB_DarkMatterNoLabels);
+            const answer = data.features[Math.floor(Math.random()*data.features.length)];
+            console.log('answer', answer);
+            document.getElementById('suburb-name').textContent = answer.id;
+            const guessList = document.getElementById('guess-list');
+        </script>
+        <!-- Events -->
+        <script>
+            let currentLayer = null;
+            function onEachFeature(feature, layer) {
+                layer.on('click', (e) => {
+                    if(layer !== currentLayer) {
+                        // if (currentLayer !== null) {
+                        //     currentLayer.setStyle({fillColor: '#000000'});
+                        // }
+                        const guessCoords = {
+                            name: feature.id,
+                            coords: feature.properties.center
+                        };
+                        const answerCoords = {
+                            name: answer.id,
+                            coords: answer.properties.center
+                        };
+                        if (feature.id === answer.id) {
+                            addGuess(guessCoords, answerCoords, true);
+                            alert('Correct!');
+                        } else {
+                            addGuess(guessCoords, answerCoords, false);
+                            
+                        }
+                        layer.setStyle({
+                            fillColor: '#FFFFFF',
+                            zIndex: 1000
+                        });
+                        currentLayer = layer;
+                    }
+                });
+            }
+            L.geoJson(data, {
+                style: function (feature) {
+                    return {
+                        color: '#000000',
+                        weight: 3,
+                    };
+                },
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        </script>
+    </body>           
+</html>

@@ -1,0 +1,36 @@
+body {
+    margin: 0px;
+}
+
+#infobox {
+    position: absolute;
+    display: inline;
+    z-index: 1000;
+    display: inline;
+    background-color: white;
+    width: 100%;
+    font-size: 200%;
+}
+
+#suburb-name {
+    z-index: 1000; 
+    background-color: white; 
+    margin-top: 0px;
+    margin: 0px;
+    text-align: center;
+}
+
+#answer-list {
+    z-index: 999; 
+    /* padding: 0px; */
+    margin: 0;
+    background-color: white; 
+    top: 20px;
+    /* list-style: none; */
+    margin-left: 0px;
+}
+
+#map {
+    width: 100vw; 
+    height: 100vh;
+}
