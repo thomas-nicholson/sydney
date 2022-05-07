@@ -148,13 +148,9 @@
         </script>
         <!-- Events -->
         <script>
-            let currentLayer = null;
             function onEachFeature(feature, layer) {
                 layer.on('click', (e) => {
                     if(layer !== currentLayer) {
-                        // if (currentLayer !== null) {
-                        //     currentLayer.setStyle({fillColor: '#000000'});
-                        // }
                         const guessCoords = {
                             name: feature.id,
                             coords: feature.properties.center
@@ -164,17 +160,19 @@
                             coords: answer.properties.center
                         };
                         if (feature.id === answer.id) {
+                            layer.setStyle({
+                                fillColor: '#00FF00',
+                                zIndex: 1000
+                            });
                             addGuess(guessCoords, answerCoords, true);
                             alert('Correct!');
                         } else {
                             addGuess(guessCoords, answerCoords, false);
-                            
+                            layer.setStyle({
+                                fillColor: '#FFFFFF',
+                                zIndex: 1000
+                            });
                         }
-                        layer.setStyle({
-                            fillColor: '#FFFFFF',
-                            zIndex: 1000
-                        });
-                        currentLayer = layer;
                     }
                 });
             }
