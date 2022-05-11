@@ -150,29 +150,27 @@
         <script>
             function onEachFeature(feature, layer) {
                 layer.on('click', (e) => {
-                    if(layer !== currentLayer) {
-                        const guessCoords = {
-                            name: feature.id,
-                            coords: feature.properties.center
-                        };
-                        const answerCoords = {
-                            name: answer.id,
-                            coords: answer.properties.center
-                        };
-                        if (feature.id === answer.id) {
-                            layer.setStyle({
-                                fillColor: '#00FF00',
-                                zIndex: 1000
-                            });
-                            addGuess(guessCoords, answerCoords, true);
-                            alert('Correct!');
-                        } else {
-                            addGuess(guessCoords, answerCoords, false);
-                            layer.setStyle({
-                                fillColor: '#FFFFFF',
-                                zIndex: 1000
-                            });
-                        }
+                    const guessCoords = {
+                        name: feature.id,
+                        coords: feature.properties.center
+                    };
+                    const answerCoords = {
+                        name: answer.id,
+                        coords: answer.properties.center
+                    };
+                    if (feature.id === answer.id) {
+                        layer.setStyle({
+                            fillColor: '#00FF00',
+                            zIndex: 1000
+                        });
+                        addGuess(guessCoords, answerCoords, true);
+                        alert('Correct!');
+                    } else {
+                        addGuess(guessCoords, answerCoords, false);
+                        layer.setStyle({
+                            fillColor: '#FFFFFF',
+                            zIndex: 1000
+                        });
                     }
                 });
             }
